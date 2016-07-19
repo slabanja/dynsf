@@ -7,3 +7,6 @@ dist/*
 *.png
 *.xvg
 *.pdf
+.project
+.pydevproject
+.settings/*
