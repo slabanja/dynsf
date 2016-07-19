@@ -19,10 +19,9 @@
 __all__ = ['XTC_reader', 'TRJ_reader', 'molfile_reader',
            'trajectory_readers']
 
-from numpy import pi, sin, cos, arange, array, zeros
+from numpy import pi, cos, arange, array, zeros
 import numpy as np
 import re
-import sys
 
 from itertools import count
 
@@ -83,6 +82,7 @@ class abstract_trajectory_reader:
 libgmx_name = find_library('gmx')
 libgmx = libgmx_name and cdll.LoadLibrary(libgmx_name)
 np_ndp = np.ctypeslib.ndpointer
+
 if libgmx:
     # single prec gmx-real equals float, right?
     xtcfloat_np = np.float32
@@ -102,8 +102,8 @@ if libgmx:
     libgmx.read_first_xtc.argtypes = [
         POINTER(xtcint_ct), POINTER(xtcint_ct),
         POINTER(xtcint_ct), POINTER(xtcfloat_ct),
-        np_ndp(dtype=xtcfloat_np, shape=(3,3),
-                               flags='f_contiguous, aligned'),
+        np_ndp(dtype=xtcfloat_np, shape=(3, 3),
+               flags='f_contiguous, aligned'),
         POINTER(POINTER(xtcfloat_ct)),
         POINTER(xtcfloat_ct), POINTER(xtcint_ct)]
 
@@ -115,10 +115,10 @@ if libgmx:
     libgmx.read_next_xtc.argtypes = [
         POINTER(xtcint_ct), xtcint_ct,
         POINTER(xtcint_ct), POINTER(xtcfloat_ct),
-        np_ndp(dtype=xtcfloat_np, shape=(3,3),
-                               flags='f_contiguous, aligned'),
+        np_ndp(dtype=xtcfloat_np, shape=(3, 3),
+               flags='f_contiguous, aligned'),
         np_ndp(dtype=xtcfloat_np, ndim=2,
-                               flags='f_contiguous, aligned'),
+               flags='f_contiguous, aligned'),
         POINTER(xtcfloat_ct), POINTER(xtcint_ct)]
 
 
@@ -138,13 +138,13 @@ class XTC_reader(abstract_trajectory_reader):
 
         self._index = count(1)
         self._natoms = xtcint_ct()
-        self._step =   xtcint_ct()
-        self._time =   xtcfloat_ct()
-        self._box =    np.require(zeros((3,3)),
+        self._step = xtcint_ct()
+        self._time = xtcfloat_ct()
+        self._box = np.require(zeros((3, 3)),
                                   xtcfloat_np, ['F_CONTIGUOUS', 'ALIGNED'])
-        self._x =      None
-        self._prec =   xtcfloat_ct()
-        self._bOK =    xtcint_ct()  # gmx_bool equals int
+        self._x = None
+        self._prec = xtcfloat_ct()
+        self._bOK = xtcint_ct()  # gmx_bool equals int
         self._open = True
         self._first_called = False
 
@@ -162,7 +162,7 @@ class XTC_reader(abstract_trajectory_reader):
             raise IOError("XTC_reader: corrupt frame in xtc-file?")
 
         N = self._natoms.value
-        self._x = np.require(array(_xfirst[0:3*N]).reshape((3,N), order='F'),
+        self._x = np.require(array(_xfirst[0:3 * N]).reshape((3, N), order='F'),
                              xtcfloat_np, ['F_CONTIGUOUS', 'ALIGNED'])
         self._x.flags.writeable = False
 
@@ -195,14 +195,14 @@ class XTC_reader(abstract_trajectory_reader):
                 self.close()
                 raise StopIteration
         else:
-           self._get_first()
+            self._get_first()
 
         return dict(
-            index = self._index.next(),
-            box = self._box.copy('F'),
-            time = self._time.value,
-            N = self._natoms.value,
-            x = self._x,
+            index=self._index.next(),
+            box=self._box.copy('F'),
+            time=self._time.value,
+            N=self._natoms.value,
+            x=self._x,
             )
 
 
@@ -225,14 +225,13 @@ class TRJ_reader(abstract_trajectory_reader):
             from bz2 import BZ2File
             self._fh = BZ2File(filename, 'r')
         else:
-            self._fh = open(filename,'r')
+            self._fh = open(filename, 'r')
 
         self._open = True
-        self._item_re = \
-            re.compile(r'^ITEM: (TIMESTEP|NUMBER OF ATOMS|BOX BOUNDS|ATOMS) ?(.*)$')
+        self._item_re = re.compile(r'^ITEM: (TIMESTEP|NUMBER OF ATOMS|BOX BOUNDS|ATOMS) ?(.*)$')
         self.x_factor = x_factor
         self.t_factor = t_factor
-        self.v_factor = x_factor/t_factor
+        self.v_factor = x_factor / t_factor
         self._first_called = False
         self._index = count(1)
 
@@ -269,12 +268,12 @@ class TRJ_reader(abstract_trajectory_reader):
                 bbounds = [map(float, self._fh.readline().split())
                            for _ in range(3)]
                 x = array(bbounds)
-                box = np.diag(x[:,1]-x[:,0])
-                if x.shape == (3,3):
-                    box[1,0] = x[0,2]
-                    box[2,0] = x[1,2]
-                    box[2,1] = x[2,2]
-                elif x.shape != (3,2):
+                box = np.diag(x[:, 1] - x[:, 0])
+                if x.shape == (3, 3):
+                    box[1, 0] = x[0, 2]
+                    box[2, 0] = x[1, 2]
+                    box[2, 1] = x[2, 2]
+                elif x.shape != (3, 2):
                     raise IOError('TRJ_reader: Malformed box bounds in TRJ frame header')
             elif m.group(1) == "ATOMS":
                 cols = tuple(m.group(2).split())
@@ -296,13 +295,13 @@ class TRJ_reader(abstract_trajectory_reader):
             return True
 
         self._x_map = None
-        if _all_in_cols(('id','xu','yu','zu')):
-            self._x_I = array(map(cols.index, ('xu','yu','zu')))
-        elif _all_in_cols(('id','x','y','z')):
-            self._x_I = array(map(cols.index, ('x','y','z')))
-        elif _all_in_cols(('id','xs','ys','zs')):
-            self._x_I = array(map(cols.index, ('xs','ys','zs')))
-            _x_factor = self._box.diagonal().reshape((3,1))
+        if _all_in_cols(('id', 'xu', 'yu', 'zu')):
+            self._x_I = array(map(cols.index, ('xu', 'yu', 'zu')))
+        elif _all_in_cols(('id', 'x', 'y', 'z')):
+            self._x_I = array(map(cols.index, ('x', 'y', 'z')))
+        elif _all_in_cols(('id', 'xs', 'ys', 'zs')):
+            self._x_I = array(map(cols.index, ('xs', 'ys', 'zs')))
+            _x_factor = self._box.diagonal().reshape((3, 1))
             # xs.shape == (3,n)
             self._x_map = lambda xs : xs * _x_factor
         else:
@@ -310,8 +309,8 @@ class TRJ_reader(abstract_trajectory_reader):
                                'and z coordinates to be useful.')
         self._id_I = cols.index('id')
 
-        if _all_in_cols(('vx','vy','vz')):
-            self._v_I = array(map(cols.index, ('vx','vy','vz')))
+        if _all_in_cols(('vx', 'vy', 'vz')):
+            self._v_I = array(map(cols.index, ('vx', 'vy', 'vz')))
         else:
             self._v_I = None
 
@@ -322,17 +321,17 @@ class TRJ_reader(abstract_trajectory_reader):
 
         data = array([map(float, self._fh.readline().split())
                          for _ in range(N)])
-        I = np.asarray(data[:,self._id_I], dtype=np.int)
+        I = np.asarray(data[:, self._id_I], dtype=np.int)
         # Unless dump is done for group "all" ...
         I[np.argsort(I)] = arange(len(I))
-        self._x = zeros((3,N), order='F')
+        self._x = zeros((3, N), order='F')
         if self._x_map is None:
-            self._x[:,I] = data[:,self._x_I].transpose()
+            self._x[:, I] = data[:, self._x_I].transpose()
         else:
-            self._x[:,I] = self._x_map(data[:,self._x_I].transpose())
+            self._x[:, I] = self._x_map(data[:, self._x_I].transpose())
         if self._v_I is not None:
-            self._v = zeros((3,N), order='F')
-            self._v[:,I] = data[:,self._v_I].transpose()
+            self._v = zeros((3, N), order='F')
+            self._v[:, I] = data[:, self._v_I].transpose()
 
     def _get_next(self):
         # get next frame, update state of self
@@ -344,13 +343,13 @@ class TRJ_reader(abstract_trajectory_reader):
 
         data = array([map(float, self._fh.readline().split())
                          for _ in range(N)])
-        I = np.asarray(data[:,self._id_I], dtype=np.int)-1
+        I = np.asarray(data[:, self._id_I], dtype=np.int) - 1
         if self._x_map is None:
-            self._x[:,I] = data[:,self._x_I].transpose()
+            self._x[:, I] = data[:, self._x_I].transpose()
         else:
-            self._x[:,I] = self._x_map(data[:,self._x_I].transpose())
+            self._x[:, I] = self._x_map(data[:, self._x_I].transpose())
         if self._v_I is not None:
-            self._v[:,I] = data[:,self._v_I].transpose()
+            self._v[:, I] = data[:, self._v_I].transpose()
 
     def __iter__(self):
         return self
@@ -369,15 +368,15 @@ class TRJ_reader(abstract_trajectory_reader):
             self._get_first()
 
         res = dict(
-            index = self._index.next(),
-            N = int(self._natoms),
-            box = self.x_factor*self._box.copy('F'),
-            time = self.t_factor*self._step,
-            x = self.x_factor*self._x,
+            index=self._index.next(),
+            N=int(self._natoms),
+            box=self.x_factor * self._box.copy('F'),
+            time=self.t_factor * self._step,
+            x=self.x_factor * self._x,
             )
 
         if self._v_I is not None:
-            res['v'] = self.v_factor*self._v
+            res['v'] = self.v_factor * self._v
 
         return res
 
@@ -408,7 +407,7 @@ class molfile_reader(abstract_trajectory_reader):
 
     @classmethod
     def suggest_plugin(cls, filename_suffix):
-        for _,_,sfx,plugin in TRAJECTORY_PLUGIN_MAPPING:
+        for _, _, sfx, plugin in TRAJECTORY_PLUGIN_MAPPING:
             if sfx == filename_suffix:
                 return plugin
         return None
@@ -424,10 +423,10 @@ class molfile_reader(abstract_trajectory_reader):
 
         self.x_factor = x_factor
         self.t_factor = t_factor
-        self.v_factor = x_factor/t_factor
+        self.v_factor = x_factor / t_factor
 
         self._N = c_int()
-        suffix = filename.rsplit('.',1)[-1]
+        suffix = filename.rsplit('.', 1)[-1]
 
         self._mfp = MolfilePlugin(plugin)
         p = self._mfp.plugin
@@ -443,7 +442,7 @@ class molfile_reader(abstract_trajectory_reader):
             # for e.g. lammpsplugin, read_structure needs to be called first so
             # that molfile_reader knows (internally) which coordinates and
             # velocites to map to which atoms.
-            self._atoms_arr = (molfile_atom_t*N)()
+            self._atoms_arr = (molfile_atom_t * N)()
             self._optflags = c_int()
             rc = p.read_structure(self._fh, byref(self._optflags), self._atoms_arr)
             if rc:
@@ -453,7 +452,7 @@ class molfile_reader(abstract_trajectory_reader):
             self._atoms_arr = None
 
         self._v = None
-        self._x = np.require(zeros((3,N)), molfile_float_np,
+        self._x = np.require(zeros((3, N)), molfile_float_np,
                              ['F_CONTIGUOUS', 'ALIGNED'])
         self._x.flags.writeable = False
 
@@ -467,7 +466,7 @@ class molfile_reader(abstract_trajectory_reader):
                               'file %s (plugin %s, rc %i)' % (filename, plugin, rc))
 
             if tsm.has_velocities:
-                self._v = np.require(zeros((3,N)), molfile_float_np,
+                self._v = np.require(zeros((3, N)), molfile_float_np,
                                      ['F_CONTIGUOUS', 'ALIGNED'])
                 self._v.flags.writeable = False
         else:
@@ -499,15 +498,15 @@ class molfile_reader(abstract_trajectory_reader):
             raise StopIteration
 
         res = dict(
-                   index = self._index.next(),
-                   box = to_box(ts.A, ts.B, ts.C,
-                                ts.alpha, ts.beta, ts.gamma)*self.x_factor,
-                   N = self._N.value,
-                   time = ts.physical_time*self.t_factor,
-                   x = self._x*self.x_factor
+                   index=self._index.next(),
+                   box=to_box(ts.A, ts.B, ts.C,
+                                ts.alpha, ts.beta, ts.gamma) * self.x_factor,
+                   N=self._N.value,
+                   time=ts.physical_time * self.t_factor,
+                   x=self._x * self.x_factor
                    )
         if self._v is not None:
-            res['v'] = self._v*self.v_factor
+            res['v'] = self._v * self.v_factor
 
         return res
 
@@ -516,10 +515,10 @@ class molfile_reader(abstract_trajectory_reader):
 
 def to_box(A, B, C, a, b, g):
     # Helper function that creates box vectors out of molfile-info
-    f = pi/180.0
-    return array(((A,           0.0,        0.0),
-                  (B*cos(f*g),  B,          0.0),
-                  (C*cos(f*b),  C*cos(f*a), C)))
+    f = pi / 180.0
+    return array(((A, 0.0, 0.0),
+                  (B * cos(f * g), B, 0.0),
+                  (C * cos(f * b), C * cos(f * a), C)))
 
 
 trajectory_readers = (molfile_reader, XTC_reader, TRJ_reader)

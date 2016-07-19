@@ -18,15 +18,13 @@
 
 __all__ = ['get_itraj', 'iwindow']
 
-from numpy import pi, sin, cos, arange, array, zeros
-import numpy as np
 import sys
 import logging
-from itertools import islice, imap, count
+from itertools import islice, imap
 from os.path import isfile
 from collections import deque
 
-from trajectory_readers import *
+from trajectory_readers import trajectory_readers
 
 logger = logging.getLogger('dynsf')
 
@@ -57,7 +55,7 @@ def get_itraj(filename, step=1, max_frames=0,
     if max_frames == 0:
         max_frames = sys.maxint
     elif step > 1:
-        max_frames = max_frames*step
+        max_frames = max_frames * step
 
     if not isfile(filename):
         raise IOError('File "%s" does not exist' % filename)
@@ -70,7 +68,7 @@ def get_itraj(filename, step=1, max_frames=0,
                 logger.debug('Trying trajectory_reader %s' % reader_name)
                 i = reader(filename)
                 return islice(reader(filename), 0, max_frames, step)
-            except Exception as e:
+            except Exception as _:
                 logger.debug('Trying trajectory_reader %s failed to open file %s' % (
                         reader_name, filename))
 
@@ -122,7 +120,7 @@ class iwindow:
         else:
             if self.stride >= self.width:
                 self._window.clear()
-                consume(self._raw_it, self.stride-self.width)
+                consume(self._raw_it, self.stride - self.width)
             else:
                 for _ in xrange(min((self.stride, len(self._window)))):
                     self._window.popleft()

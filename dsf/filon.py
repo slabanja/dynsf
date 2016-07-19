@@ -16,15 +16,7 @@
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 # 02110-1301, USA.
 
-__all__ = ['fourier_cos', 'sin_integral', 'cos_integral']
-
-from numpy import sin, cos, pi, mod, \
-    zeros, arange, linspace, require, \
-    where, sum
-
-
-__doc__ = """
-Python implementation of Filon's integration formula.
+"""Python implementation of Filon's integration formula.
 
 For information about Filon's formula, see e.g.
 Abramowitz, Stegun, Handbook of Mathematical Functions, section 25,
@@ -50,6 +42,13 @@ integration intervals by the optional argument x0.
 
 """
 
+__all__ = ['fourier_cos', 'sin_integral', 'cos_integral']
+
+from numpy import sin, cos, pi, mod, \
+    zeros, arange, linspace, require, \
+    where, sum
+
+
 
 def fourier_cos(f, dx, k=None, axis=0):
     """Calculate a direct fourier cosine transform of function f(x) using
@@ -67,9 +66,9 @@ def fourier_cos(f, dx, k=None, axis=0):
     """
 
     if k is None:
-        k = linspace(0.0, 2*pi/dx, f.shape[axis])
+        k = linspace(0.0, 2 * pi / dx, f.shape[axis])
 
-    return k, 2*cos_integral(f, dx, k, x0=0.0, axis=axis)
+    return k, 2 * cos_integral(f, dx, k, x0=0.0, axis=axis)
 
 
 def cos_integral(f, dx, k, x0=0.0, axis=0):
@@ -102,43 +101,43 @@ def _gen_sc_int(f, dx, k, x0, axis, sc):
 
     Nk = len(k)
     Nx = f.shape[axis]
-    x_shape = [1]*f.ndim + [Nx] # We'll transpose axis and put it last
-    k_shape = [1]*(f.ndim+1)    #
-    k_shape[axis] = Nk          #
+    x_shape = [1] * f.ndim + [Nx]  # We'll transpose axis and put it last
+    k_shape = [1] * (f.ndim + 1)  #
+    k_shape[axis] = Nk  #
 
-    if mod((Nx-1), 2) != 0 or Nx < 3:
+    if mod((Nx - 1), 2) != 0 or Nx < 3:
         raise ValueError('f must have an odd length, >=3, along its integration axis')
 
-    s = (slice(None),)*f.ndim
-    odd_index =   s + (slice(1,None,2),)
-    even_index =  s + (slice(0,None,2),)
+    s = (slice(None),) * f.ndim
+    odd_index = s + (slice(1, None, 2),)
+    even_index = s + (slice(0, None, 2),)
     first_index = s + ((0,),)
-    last_index =  s + ((-1,),)
+    last_index = s + ((-1,),)
 
-    alpha, beta, gamma = [x.reshape(k_shape[:-1]) for x in _alpha_beta_gamma(dx*k)]
-    x = (x0+dx*arange(0.0, Nx)).reshape(x_shape)
+    alpha, beta, gamma = [x.reshape(k_shape[:-1]) for x in _alpha_beta_gamma(dx * k)]
+    x = (x0 + dx * arange(0.0, Nx)).reshape(x_shape)
     k = k.reshape(k_shape)
 
     # Add an extra dimension to f, and transpose it to put the x-dimension at axis=-1
-    t = range(f.ndim+1)
+    t = range(f.ndim + 1)
     t[axis], t[-1] = t[-1], t[axis]
-    f = f.reshape(f.shape+(1,)).transpose(t)
+    f = f.reshape(f.shape + (1,)).transpose(t)
 
-    sc_k_x = sc(k*x)
+    sc_k_x = sc(k * x)
     sc_k_x[first_index] *= 0.5
     sc_k_x[last_index] *= 0.5
 
     if sc == sin:
-        return dx*(alpha * sum((f[first_index] * cos(k*x0) -
-                                f[last_index]  * cos(k*x[last_index])), axis=-1) +
-                   beta  * sum(f[even_index] * sc_k_x[even_index],      axis=-1) +
-                   gamma * sum(f[odd_index]  * sc_k_x[odd_index],       axis=-1))
+        return dx * (alpha * sum((f[first_index] * cos(k * x0) -
+                                f[last_index] * cos(k * x[last_index])), axis=-1) +
+                   beta * sum(f[even_index] * sc_k_x[even_index], axis=-1) +
+                   gamma * sum(f[odd_index] * sc_k_x[odd_index], axis=-1))
 
     elif sc == cos:
-        return dx*(alpha * sum((f[last_index]  * sin(k*x[last_index]) -
-                                f[first_index] * sin(k*x0)),         axis=-1) +
-                   beta  * sum(f[even_index] * sc_k_x[even_index],   axis=-1) +
-                   gamma * sum(f[odd_index]  * sc_k_x[odd_index],    axis=-1))
+        return dx * (alpha * sum((f[last_index] * sin(k * x[last_index]) -
+                                f[first_index] * sin(k * x0)), axis=-1) +
+                   beta * sum(f[even_index] * sc_k_x[even_index], axis=-1) +
+                   gamma * sum(f[odd_index] * sc_k_x[odd_index], axis=-1))
 
     raise RuntimeError('Internal error, this should not happen')
 
@@ -154,21 +153,21 @@ def _alpha_beta_gamma(theta):
 
     # theta==0 needs special treatment
     I_nz, = theta.nonzero()
-    I_z, = where(theta==0.0)
+    I_z, = where(theta == 0.0)
     if len(I_z) > 0:
-        beta[I_z] = 2.0/3.0
-        gamma[I_z] = 4.0/3.0
+        beta[I_z] = 2.0 / 3.0
+        gamma[I_z] = 4.0 / 3.0
         theta = theta[I_nz]
 
     sin_t = sin(theta)
     cos_t = cos(theta)
-    sin2_t = sin_t*sin_t
-    cos2_t = cos_t*cos_t
-    theta2 = theta*theta
-    itheta3 = 1.0/(theta2*theta)
+    sin2_t = sin_t * sin_t
+    cos2_t = cos_t * cos_t
+    theta2 = theta * theta
+    itheta3 = 1.0 / (theta2 * theta)
 
-    alpha[I_nz] = itheta3*(theta2 + theta*sin_t*cos_t - 2*sin2_t)
-    beta[I_nz] = 2*itheta3*(theta*(1+cos2_t) - 2*sin_t*cos_t)
-    gamma[I_nz] = 4*itheta3*(sin_t - theta*cos_t)
+    alpha[I_nz] = itheta3 * (theta2 + theta * sin_t * cos_t - 2 * sin2_t)
+    beta[I_nz] = 2 * itheta3 * (theta * (1 + cos2_t) - 2 * sin_t * cos_t)
+    gamma[I_nz] = 4 * itheta3 * (sin_t - theta * cos_t)
 
     return (alpha, beta, gamma)

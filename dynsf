@@ -20,7 +20,6 @@
 # 02110-1301, USA.
 
 
-import re
 import os
 import sys
 import optparse
@@ -46,9 +45,9 @@ except ImportError:
     # Fallback if SciPy isn't available
     def interp1d(xp, yp):
         if len(yp.shape) == 1:
-            return lambda x:np.interp(x,xp,yp)
+            return lambda x:np.interp(x, xp, yp)
         elif len(yp.shape) == 2:
-            return lambda x:np.array([np.interp(x,xp,ypi) for ypi in yp])
+            return lambda x:np.array([np.interp(x, xp, ypi) for ypi in yp])
         else:
             raise RuntimeError("yp can only be 1d or 2d")
 
@@ -79,12 +78,12 @@ class averager:
     def add(self, array, slot):
         self[slot] += array
     def get_single_av(self, slot):
-        f = 1.0/self._samples[slot]
-        return f*self._data[slot]
+        f = 1.0 / self._samples[slot]
+        return f * self._data[slot]
     def get_av(self):
         return np.array([self.get_single_av(i) for i in range(self._N)])
 
-hbar = 6.58211928e-1 # eV fs
+hbar = 6.58211928e-1  # eV fs
 pi = np.pi
 two_pi = 2.0 * pi
 
@@ -129,7 +128,7 @@ if __name__ == '__main__':
                       '"line" to sample uniformely along a certain direction '
                       'in k-space, '
                       '"explicit" for sampling on an explicit set of k-points')
-    kspace.add_option('','--k-bins', metavar='BINS', type='int',
+    kspace.add_option('', '--k-bins', metavar='BINS', type='int',
                       default=80,
                       help='Number of "radial" bins to use (between 0 and '
                       'largest |k|-value) when collecting resulting '
@@ -139,12 +138,12 @@ if __name__ == '__main__':
 
     kiso = optparse.OptionGroup(parser,
                                 'Isotropic k-space sampling')
-    kiso.add_option('','--max-k-points', metavar='KPOINTS', type='int',
+    kiso.add_option('', '--max-k-points', metavar='KPOINTS', type='int',
                       default=20000,
                     help='Maximum number of points used to sample k-space. '
                     'Puts an (approximate) upper limit by randomly selecting points. '
                     'Default value is 20000.')
-    kiso.add_option('','--k-max', metavar='KMAX', type='float', default=60,
+    kiso.add_option('', '--k-max', metavar='KMAX', type='float', default=60,
                     help='Largest k-value to consider (in "2*pi*nm^-1"). '
                     'Default value for KMAX is 60. ')
     parser.add_option_group(kiso)
@@ -152,12 +151,12 @@ if __name__ == '__main__':
 
     kline = optparse.OptionGroup(parser,
                                 'Line-style k-space sampling')
-    kline.add_option('','--k-direction', metavar='KDIRECTION',
+    kline.add_option('', '--k-direction', metavar='KDIRECTION',
                      help='Point in k-space to consider. '
                      'KPOINTS points will be evenly placed between '
                      '0,0,0 and KDIRECTION. Given as three '
                      'comma separated values.')
-    kline.add_option('','--k-points', metavar='KPOINTS', type='int',
+    kline.add_option('', '--k-points', metavar='KPOINTS', type='int',
                      default=100,
                      help='Numbers of uniformly distributed points between '
                      '0,0,0 and KDIRECTION to consider. Default value is 100.')
@@ -175,23 +174,23 @@ if __name__ == '__main__':
     tgroup = optparse.OptionGroup(parser, 'Time-related options',
                                   'Options controlling timestep, '
                                   'length and shape of trjectory frame window, etc.')
-    tgroup.add_option('','--nt', metavar='TIME_CORR_STEPS', type='int',
+    tgroup.add_option('', '--nt', metavar='TIME_CORR_STEPS', type='int',
                       help='Determines the length of the trajectory frame window '
                       'to use for time correlation calculation. '
                       'TIME_CORR_STEPS is expressed in "number of frames" and '
                       'e.g. determines the smallest frequency resolved. '
                       'If no TIME_CORR_STEPS is provided, only static (t=0) '
                       'correlations will be calculated')
-    tgroup.add_option('','--max-frames', metavar='FRAMES', type='int',
+    tgroup.add_option('', '--max-frames', metavar='FRAMES', type='int',
                       default=100,
                       help='Limits the total number of trajectory frames read '
                       'to FRAMES. '
                       'The default value is set to 100.')
-    tgroup.add_option('','--step', metavar='STEP', type='int', default=1,
+    tgroup.add_option('', '--step', metavar='STEP', type='int', default=1,
                       help='Only use every (STEP)th trajectory frame. '
                       'Default STEP is 1, meaning every frame is processed. '
                       'STEP affects dt and hence the smallest time resolved.')
-    tgroup.add_option('','--stride', metavar='STRIDE', type='int', default=1,
+    tgroup.add_option('', '--stride', metavar='STRIDE', type='int', default=1,
                       help='Stride STRIDE frames between consecutive trajectory '
                       'windows. This does not affect dt. '
                       'If e.g. STRIDE > TIME_CORR_STEPS, some frames will '
@@ -205,7 +204,7 @@ if __name__ == '__main__':
 
 
     options = optparse.OptionGroup(parser, 'General processing options')
-    options.add_option('','--calculate-self', action='store_true', default=False,
+    options.add_option('', '--calculate-self', action='store_true', default=False,
                        help='Calculate the self-part, F_s, ...')
     parser.add_option_group(options)
 
@@ -220,7 +219,7 @@ if __name__ == '__main__':
 
 
     (options, args) = parser.parse_args()
-    quietness= options.quiet-options.verbose
+    quietness = options.quiet - options.verbose
 
     logger = logging.getLogger('dynsf')
     handler = logging.StreamHandler()
@@ -286,16 +285,16 @@ if __name__ == '__main__':
 
     if options.nt:
         assert(options.nt >= 1)
-        N_tc = options.nt + (options.nt+1)%2
+        N_tc = options.nt + (options.nt + 1) % 2
     else:
         N_tc = 1
 
     if N_tc > 1:
         logger.info('-- delta_t found to be %f [fs], time window %f [fs]' % \
-                        (delta_t, delta_t*(options.nt-1)))
-        dw = two_pi/(options.nt*delta_t)
+                        (delta_t, delta_t * (options.nt - 1)))
+        dw = two_pi / (options.nt * delta_t)
         logger.info('-- delta_omega, max_omega = %f, %f [fs^-1]' % \
-                        (dw, dw*options.nt))
+                        (dw, dw * options.nt))
 
     # Do we get any velocities from the trajectory reader?
     if 'v' in f0:
@@ -311,17 +310,17 @@ if __name__ == '__main__':
 
     index = section_index(options.index, f0['N'])
 
-    a,b,c = reference_box = f0['box']
-    reference_volume = abs(np.dot(np.cross(a,b),c))
+    a, b, c = reference_box = f0['box']
+    reference_volume = abs(np.dot(np.cross(a, b), c))
     particle_types = index.get_section_names()
     particle_counts = map(len, index.get_section_indices())
-    particle_densities = [n/reference_volume for n in particle_counts]
+    particle_densities = [n / reference_volume for n in particle_counts]
 
     logger.info('Trajectory file: %s' % options.trajectory)
     logger.info('-- With a total of %i particles, %i types.' % (
             f0['N'], len(particle_types)))
     for i, t in enumerate(particle_types):
-        logger.info('-- %d. %d %s' % (i+1, particle_counts[i], t))
+        logger.info('-- %d. %d %s' % (i + 1, particle_counts[i], t))
 
     logger.info('Simulation box is\n%s' % str(reference_box))
 
@@ -337,7 +336,7 @@ if __name__ == '__main__':
             sys.exit(1)
 
         try:
-            k_direction = np.array(map(float,options.k_direction.split(',')))
+            k_direction = np.array(map(float, options.k_direction.split(',')))
         except ValueError:
             logger.error('k-direction must be specified as a valid comma '
                          'separated three-tuple.')
@@ -358,7 +357,7 @@ if __name__ == '__main__':
     else:
         logger.warning('N kpoints = %i' % len(rec.k_distance))
     logger.info('k_max = %f --> x_min = %f [nm]' % \
-                    (rec.max_k, two_pi/rec.max_k))
+                    (rec.max_k, two_pi / rec.max_k))
 
     assert options.stride > 0
     N_stride = options.stride
@@ -366,7 +365,7 @@ if __name__ == '__main__':
     # function to use to "calculate rho(k)"
     f2 = rec.get_frame_process_function()
     # function to split particles into different index groups (types)
-    f1 = index.get_section_split_function() # Prerequisite for f2
+    f1 = index.get_section_split_function()  # Prerequisite for f2
     # apply this to each frame considered
     element_processor = lambda frame : f2(f1(frame))
 
@@ -385,9 +384,9 @@ if __name__ == '__main__':
     Ntypes = len(particle_types)
 
     m = count(0)
-    pair_list = [(m.next(),i,j)
-                 for i in xrange(Ntypes) for j in xrange(i,Ntypes)]
-    pair_types = [particle_types[i]+'-'+particle_types[j] for _, i, j in pair_list]
+    pair_list = [(m.next(), i, j)
+                 for i in xrange(Ntypes) for j in xrange(i, Ntypes)]
+    pair_types = [particle_types[i] + '-' + particle_types[j] for _, i, j in pair_list]
 
     z = np.zeros(len(rec.q_distance))
     F_k_t_avs = [averager(N_tc, z) for _ in pair_list]
@@ -412,9 +411,9 @@ if __name__ == '__main__':
                     np.real(np.sum(f0['jper_ks'][i] * fi['jper_ks'][j].conjugate(), axis=0))
 
         if calculate_self:
-            for i,F_s in enumerate(
+            for i, F_s in enumerate(
                 rec.process_specific_xs(
-                    [(xi-x0) for xi,x0 in zip(fi['xs'], f0['xs'])])):
+                    [(xi - x0) for xi, x0 in zip(fi['xs'], f0['xs'])])):
                 F_s_k_t_avs[i][time_i] += np.real(F_s)
 
 
@@ -439,8 +438,8 @@ if __name__ == '__main__':
 
     if calculate_self:
         F_s_k_t = map(k_bin_averager, [C.get_av() for C in F_s_k_t_avs])
-        for i,N in enumerate(particle_counts):
-            F_s_k_t[i] *= (1.0/np.sqrt(N))
+        for i, N in enumerate(particle_counts):
+            F_s_k_t[i] *= (1.0 / np.sqrt(N))
 
     t = delta_t * np.arange(N_tc)
     k = k_bins.x.copy()
@@ -450,17 +449,17 @@ if __name__ == '__main__':
     output += [(k, 'k', 'k-values (technically, bin centers) [nm^1]'),
                (t, 't', 'time values [fs]'),
                (k_bin_count, 'k_bin_count', 'Number of k-points per bin')]
-    output += [(F_k_t[m], 'F_k_t_%i_%i' % (i,j),
+    output += [(F_k_t[m], 'F_k_t_%i_%i' % (i, j),
                 'Partial intermediate scattering function [time, k] (%s)' % pair_types[m])
-               for m,i,j in pair_list]
+               for m, i, j in pair_list]
 
     if calculate_current:
-        output += [(Cl_k_t[m], 'Cl_k_t_%i_%i' % (i,j),
+        output += [(Cl_k_t[m], 'Cl_k_t_%i_%i' % (i, j),
                     'Longitudinal current correlation [time, k] (%s)' % pair_types[m])
-                   for m,i,j in pair_list]
-        output += [(Ct_k_t[m], 'Ct_k_t_%i_%i' % (i,j),
+                   for m, i, j in pair_list]
+        output += [(Ct_k_t[m], 'Ct_k_t_%i_%i' % (i, j),
                     'Transversal current correlation [time, k] (%s)' % pair_types[m])
-                   for m,i,j in pair_list]
+                   for m, i, j in pair_list]
 
     if calculate_self:
         output += [(F_s_k_t[i], 'F_s_k_t_%i' % i,
@@ -477,44 +476,44 @@ if __name__ == '__main__':
         if not len(k_) % 2:
             k_ = k_[:-1]
 
-        dr = two_pi/k[-1]
-        r = np.arange(5*dr, pi/k[1], dr)
+        dr = two_pi / k[-1]
+        r = np.arange(5 * dr, pi / k[1], dr)
         def F_to_G(F, pair_index):
-            _,i,j = pair_list[pair_index]
-            f = 1 / (r*2*pi**2 * particle_densities[j])
-            kF_ = k_*interp1d(k, F - 1)(k_)
-            return f*filon.sin_integral(kF_, k_[1]-k_[0], r, k_[0], axis=1) + 1
+            _, i, j = pair_list[pair_index]
+            f = 1 / (r * 2 * pi ** 2 * particle_densities[j])
+            kF_ = k_ * interp1d(k, F - 1)(k_)
+            return f * filon.sin_integral(kF_, k_[1] - k_[0], r, k_[0], axis=1) + 1
         G_r_t = [F_to_G(F, i) for i, F in enumerate(F_k_t)]
 
         output += [(r, 'r', 'r-values for calculated G(r,t) [nm]')]
-        output += [(G_r_t[m], 'G_r_t_%i_%i' % (i,j),
+        output += [(G_r_t[m], 'G_r_t_%i_%i' % (i, j),
                     'Calculated partial van Hove function [time, r] (%s)' % pair_types[m])
-                   for m,i,j in pair_list]
+                   for m, i, j in pair_list]
 
 
     if len(t) > 2:
         w, S_k_w = zip(*[filon.fourier_cos(F, delta_t) for F in F_k_t])
         w = w[0]
         output += [(w, 'w', 'omega [fs^-1]')]
-        output += [(S_k_w[m], 'S_k_w_%i_%i' % (i,j),
+        output += [(S_k_w[m], 'S_k_w_%i_%i' % (i, j),
                     'Partial dynamical structure factor [omega, k] (%s)' % pair_types[m])
-                   for m,i,j in pair_list]
+                   for m, i, j in pair_list]
 
         if calculate_current:
             _, Cl_k_w = zip(*[filon.fourier_cos(C, delta_t) for C in Cl_k_t])
             _, Ct_k_w = zip(*[filon.fourier_cos(C, delta_t) for C in Ct_k_t])
-            output += [(Cl_k_w[m], 'Cl_k_w_%i_%i' % (i,j),
+            output += [(Cl_k_w[m], 'Cl_k_w_%i_%i' % (i, j),
                         'Longitudinal partial current correlation [omega, k] (%s)' % pair_types[m])
-                       for m,i,j in pair_list]
-            output += [(Ct_k_w[m], 'Ct_k_w_%i_%i' % (i,j),
+                       for m, i, j in pair_list]
+            output += [(Ct_k_w[m], 'Ct_k_w_%i_%i' % (i, j),
                         'Transversal partial current correlation [omega, k] (%s)' % pair_types[m])
-                       for m,i,j in pair_list]
+                       for m, i, j in pair_list]
 
         if calculate_self:
             _, S_s_k_w = zip(*[filon.fourier_cos(F, delta_t) for F in F_s_k_t])
             output += [(S_s_k_w[i], 'S_s_k_w_%i' % i,
                         'Self part of partial dynamical structure factor [omega, k]')
-                       for i,_ in enumerate(particle_types)]
+                       for i, _ in enumerate(particle_types)]
 
     comment = 'Command line: ' + ' '.join(sys.argv)
     for fn, writer in ((options.om, partial(create_mfile, comment=comment)),
