@@ -34,10 +34,8 @@ from platform import uname
 from itertools import islice
 
 from ctypes import (
-    cdll, CDLL, RTLD_GLOBAL,
-    POINTER as PTR, CFUNCTYPE as CFT,
-    Structure, cast, pointer,
-    c_int, c_uint, c_float, c_double, c_char, c_char_p, c_void_p)
+    cdll, CDLL, RTLD_GLOBAL, POINTER, CFUNCTYPE,
+    Structure, cast, pointer, c_int, c_uint, c_float, c_double, c_char, c_char_p, c_void_p)
 from ctypes.util import find_library
 
 _system = uname()[0]
@@ -48,12 +46,12 @@ if _system != "Windows":
     _cxx = CDLL(find_library('stdc++'), mode=RTLD_GLOBAL)
 
 
-c_int_p = PTR(c_int)
-c_int_pp = PTR(c_int_p)
-c_char_pp = PTR(c_char_p)
-c_char_ppp = PTR(c_char_pp)
-c_float_p = PTR(c_float)
-c_float_pp = PTR(c_float_p)
+c_int_p = POINTER(c_int)
+c_int_pp = POINTER(c_int_p)
+c_char_pp = POINTER(c_char_p)
+c_char_ppp = POINTER(c_char_pp)
+c_float_p = POINTER(c_float)
+c_float_pp = POINTER(c_float_p)
 
 #
 # As of molfile_plugin abiversion 16, the following trajectory
@@ -63,7 +61,6 @@ c_float_pp = PTR(c_float_p)
 #
 #     AMBER 'binpos' trajectory reader (.binpos)
 #     AMBER "CRD" trajectory reader (.crd, .crdbox)
-#     AMBER NetCDF trajectory reader (.nc)
 #     CHARMM, NAMD, X-PLOR "DCD" reader/writer (.dcd)
 #     CPMD (CPMD trajectory) reader (.cpmd)
 #     DLPOLY HISTORY file reader (.dlpolyhist)
@@ -83,9 +80,6 @@ TRAJECTORY_PLUGIN_MAPPING = (
 
     ('AMBER', '"CRD"',
      'crd', 'crdplugin'),
-
-    ('AMBER', 'NetCDF',
-     'nc', 'netcdfplugin'),
 
     ('CHARMM', '"DCD" - CHARMM, NAMD, XPLOR',
      'dcd', 'dcdplugin'),
@@ -177,8 +171,8 @@ class molfile_qm_timestep_t(Structure):
     pass
 
 class molfile_timestep_t(Structure):
-    _fields_ = [('coords', PTR(c_float)),
-                ('velocities', PTR(c_float)),
+    _fields_ = [('coords', POINTER(c_float)),
+                ('velocities', POINTER(c_float)),
                 ('A', c_float),
                 ('B', c_float),
                 ('C', c_float),
@@ -199,7 +193,7 @@ class molfile_volumetric_t(Structure):
                 ('has_color', c_int)]
 
 
-dummy_fun_t = CFT(c_int)
+dummy_fun_t = CFUNCTYPE(c_int)
 class molfile_plugin_t(Structure):
     # ABI from molfile abiversion 16
     # This is the important(TM) structure.
@@ -216,22 +210,22 @@ class molfile_plugin_t(Structure):
                 ('filename_extension', c_char_p),
 #
 # void *(* open_file_read)(const char *filepath, const char *filetype, int *natoms);
-                ('open_file_read', CFT(c_void_p, c_char_p, c_char_p, c_int_p)),
+                ('open_file_read', CFUNCTYPE(c_void_p, c_char_p, c_char_p, c_int_p)),
 #
 # int (*read_structure)(void *, int *optflags, molfile_atom_t *atoms);
-                ('read_structure', CFT(c_int, c_void_p, c_int_p,
-                                       PTR(molfile_atom_t))),
+                ('read_structure', CFUNCTYPE(c_int, c_void_p, c_int_p,
+                                       POINTER(molfile_atom_t))),
 #
 # int (*read_bonds)(void *, int *nbonds, int **from, int **to, float **bondorder,
 #                   int **bondtype, int *nbondtypes, char ***bondtypename);
                 ('read_bonds', dummy_fun_t),
 #
 # int (* read_next_timestep)(void *, int natoms, molfile_timestep_t *);
-                ('read_next_timestep', CFT(c_int, c_void_p, c_int,
-                                           PTR(molfile_timestep_t))),
+                ('read_next_timestep', CFUNCTYPE(c_int, c_void_p, c_int,
+                                           POINTER(molfile_timestep_t))),
 #
 # void (* close_file_read)(void *);
-                ('close_file_read', CFT(None, c_void_p)),
+                ('close_file_read', CFUNCTYPE(None, c_void_p)),
 #
 # void *(* open_file_write)(const char *filepath, const char *filetype,
 #      int natoms);
@@ -248,20 +242,20 @@ class molfile_plugin_t(Structure):
 #
 #  int (* read_volumetric_metadata)(void *, int *nsets,
 #        molfile_volumetric_t **metadata);
-                ('read_volumetric_metadata', CFT(c_int, c_void_p, c_int_p,
-                                                 PTR(PTR(molfile_volumetric_t)))),
+                ('read_volumetric_metadata', CFUNCTYPE(c_int, c_void_p, c_int_p,
+                                                 POINTER(POINTER(molfile_volumetric_t)))),
 #
 #  int (* read_volumetric_data)(void *, int set, float *datablock,
 #        float *colorblock);
-                ('read_volumetric_data', CFT(c_int, c_void_p, c_int, c_float_p,
+                ('read_volumetric_data', CFUNCTYPE(c_int, c_void_p, c_int, c_float_p,
                                              c_float_p)),
 #
 #  int (* read_rawgraphics)(void *, int *nelem, const molfile_graphics_t **data);
                 ('read_rawgraphics', dummy_fun_t),
 #
 #  int (* read_molecule_metadata)(void *, molfile_metadata_t **metadata);
-                ('read_molecule_metadata', CFT(c_int, c_void_p,
-                                               PTR(PTR(molfile_metadata_t)))),
+                ('read_molecule_metadata', CFUNCTYPE(c_int, c_void_p,
+                                               POINTER(POINTER(molfile_metadata_t)))),
 #
 #  int (* write_bonds)(void *, int nbonds, int *from, int *to, float *bondorder,
 #                     int *bondtype, int nbondtypes, char **bondtypename);
@@ -296,153 +290,142 @@ class molfile_plugin_t(Structure):
 #
 #  int (* read_timestep)(void *, int natoms, molfile_timestep_t *,
 #                        molfile_qm_metadata_t *, molfile_qm_timestep_t *);
-                ('read_timestep', CFT(c_int, c_void_p, c_int, PTR(molfile_timestep_t),
-                                      PTR(molfile_qm_metadata_t),
-                                      PTR(molfile_qm_timestep_t))),
+                ('read_timestep', CFUNCTYPE(c_int, c_void_p, c_int, POINTER(molfile_timestep_t),
+                                      POINTER(molfile_qm_metadata_t),
+                                      POINTER(molfile_qm_timestep_t))),
 #
 #  int (* read_timestep_metadata)(void *, molfile_timestep_metadata_t *);
-                ('read_timestep_metadata', CFT(c_int, c_void_p,
-                                               PTR(molfile_timestep_metadata_t))),
+                ('read_timestep_metadata', CFUNCTYPE(c_int, c_void_p,
+                                               POINTER(molfile_timestep_metadata_t))),
 #
 #  int (* read_qm_timestep_metadata)(void *, molfile_qm_timestep_metadata_t *);
                 ('read_qm_timestep_metadata', dummy_fun_t),
 #
 #  int (* cons_fputs)(const int, const char*);
-                ('cons_fputs', CFT(c_int, c_int, c_char_p))]
+                ('cons_fputs', CFUNCTYPE(c_int, c_int, c_char_p))]
 
 
 
 
 # typedef int (*vmdplugin_register_cb)(void *, vmdplugin_t *);
-vmdplugin_register_cb_t = CFT(c_int, c_void_p, PTR(vmdplugin_t))
+vmdplugin_register_cb_t = CFUNCTYPE(c_int, c_void_p, POINTER(vmdplugin_t))
 
 
-class MolfilePlugin:
+class _MolfilePlugin(object):
     """A thin molfile_plugin wrapper class
 
     This class holds the loaded plugin-library and sets up
     a molfile_plugin_t structure.
-    The initialization should be called with the name of the
-    plugin, without any library suffix (i.e., without any '.so').
-    Optionally, an explicit path for the plugin files can be
-    provided (by default, MOLFILE_PLUGIN_DIR is used).
-    The mapping provided through the tuples in
-    TRAJECTORY_PLUGIN_MAPPING can be useful to figure out which
-    pluginname to use (but that is not taken care of in here).
 
-    A call to the class method 'close', calls the plugin fini-function.
+    The 'close' method, calls the plugin fini-function.
     """
-    def __init__(self, plugin_name, plugin_dir=None):
+    def __init__(self, plugin_path):
+        library = self._load_plugin_library(plugin_path)
 
-        self._plugin_dir = self._find_molfile_plugin_dir(plugin_dir)
-        lib = self._molfile_plugin_lib(plugin_name)
-
-        # extern int vmdplugin_init(void);
-        lib.vmdplugin_init.restype = c_int
-
-        # extern int vmdplugin_fini(void);
-        lib.vmdplugin_fini.restype = c_int
-
-        # extern int vmdplugin_register(void *, vmdplugin_register_cb);
-        lib.vmdplugin_register.restype = c_int
-        lib.vmdplugin_register.argtypes = (c_void_p, vmdplugin_register_cb_t)
+        if library.vmdplugin_init() != VMDPLUGIN_SUCCESS:
+            raise RuntimeError('Failed to init %s' % plugin_path)
 
         plugin_p = pointer(molfile_plugin_t(0))
-        def py_reg_callback(v, p):
-            pc = p.contents
-            if pc.type == MOLFILE_PLUGIN_TYPE:
-                if pc.abiversion >= MIN_ABI_VERSION:
-                    plugin_p.contents = cast(p, PTR(molfile_plugin_t)).contents
-            return VMDPLUGIN_SUCCESS
+        callback = self._create_vmdplugin_register_cb(plugin_p)
 
-        if lib.vmdplugin_init() != VMDPLUGIN_SUCCESS:
-            raise RuntimeError('Failed to init %s' % plugin_name)
+        if library.vmdplugin_register(None, callback) != VMDPLUGIN_SUCCESS:
+            raise RuntimeError('Failed to register %s' % plugin_path)
 
-        vmdplugin_register_cb = vmdplugin_register_cb_t(py_reg_callback)
-        if lib.vmdplugin_register(None, vmdplugin_register_cb) != VMDPLUGIN_SUCCESS:
-            raise RuntimeError('Failed to register %s' % plugin_name)
-
-        self._lib = lib
+        self._library = library
         self.plugin = plugin_p.contents
 
     def close(self):
         self.plugin = molfile_plugin_t(0)
-        self._lib.vmdplugin_fini()
+        self._library.vmdplugin_fini()
 
-    def _molfile_plugin_lib(self, plugin_name):
-        if self._plugin_dir is None:
-            raise RuntimeError("No molfile plugin dir found. Consider setting evironment "
-                               "variable VMDDIR and use a python interpreted with matching "
-                               "architecture as molfile libraries.")
+    def _load_plugin_library(self, plugin_path):
+        library = cdll.LoadLibrary(plugin_path)
 
-        lib_path = os.path.join(self._plugin_dir,
-                                plugin_name + '.' + self._molfile_machine_specific_plugin_suffix())
+        # extern int vmdplugin_init(void);
+        library.vmdplugin_init.restype = c_int
 
-        return cdll.LoadLibrary(lib_path)
+        # extern int vmdplugin_fini(void);
+        library.vmdplugin_fini.restype = c_int
 
-    def _find_molfile_plugin_dir(self, plugin_dir):
-        if plugin_dir is not None and os.path.exists(plugin_dir):
-            return plugin_dir
+        # extern int vmdplugin_register(void *, vmdplugin_register_cb);
+        library.vmdplugin_register.restype = c_int
+        library.vmdplugin_register.argtypes = (c_void_p, vmdplugin_register_cb_t)
 
-        vmddir = os.environ.get('VMDDIR')
-        if vmddir is not None:
-            return os.path.join(vmddir,
-                                self._molfile_relative_plugin_dir())
+        return library
 
-        for path in os.environ['PATH'].split(os.pathsep):
-            tentative_vmd_script_path = os.path.join(path, 'vmd')
-            if os.path.exists(tentative_vmd_script_path):
-                vmddir = self._get_vmddir_from_vmd_script(tentative_vmd_script_path)
-                if vmddir is not None:
-                    return os.path.join(vmddir,
-                                        self._molfile_relative_plugin_dir())
+    def _create_vmdplugin_register_cb(self, plugin_p):
+        def py_register_callback(v, p):
+            contents = p.contents
+            if contents.type == MOLFILE_PLUGIN_TYPE:
+                if contents.abiversion >= MIN_ABI_VERSION:
+                    plugin_p.contents = cast(p, POINTER(molfile_plugin_t)).contents
+            return VMDPLUGIN_SUCCESS
 
-    def _get_vmddir_from_vmd_script(self, vmd_script_path):
-        with open(vmd_script_path) as fh:
-            for L in islice(fh, 10):
-                m = re.match(r'^(?:set )?defaultvmddir=(?:"(/.*)"|(/[^# ]*)).*$', L)
-                if m:
-                    a, b = m.groups()
-                    return a or b
+        vmdplugin_register_cb = vmdplugin_register_cb_t(py_register_callback)
 
-    def _molfile_relative_plugin_dir(self):
-        return os.path.join('plugins',
-                            self._molfile_machine_specific_plugin_dir_name(),
-                            'molfile')
-
-    def _molfile_machine_specific_plugin_suffix(self):
-        return 'so'
-
-    def _molfile_machine_specific_plugin_dir_name(self):
-        if _system == 'Linux':
-            if _64bit_python:
-                return 'LINUXAMD64'
-            else:
-                return 'LINUX'
-
-        elif not _64bit_python:
-            if _system == 'Darwin':
-                return 'MACOSXX86'
-
-            elif _system == 'Windows':
-                return 'WIN32'
-
-        bits = "64" if _64bit_python else "32"
-        raise RuntimeError("No known %s-bit plugin-path on %s system" % (bits, _system))
+        return vmdplugin_register_cb
 
 
-if __name__ == '__main__':
-    for _, _, _, pn in TRAJECTORY_PLUGIN_MAPPING:
-        try:
-            p = MolfilePlugin(pn)
-        except:
-            print "Failed opening %s" % pn
-            continue
+def molfile_plugin_path(plugin_name):
+    plugin_dir = molfile_plugin_dir()
+    plugin_suffix = _molfile_machine_specific_plugin_suffix()
+    path = os.path.join(plugin_dir, plugin_name + "." + plugin_suffix)
+    if os.path.exists(path):
+        return path
 
-        print("%-20s %-15s (%5s %5s %5s %5s)" % \
-                  (pn, p.plugin.filename_extension,
-                   bool(p.plugin.read_timestep),
-                   bool(p.plugin.read_timestep_metadata),
-                   bool(p.plugin.read_next_timestep),
-                   bool(p.plugin.read_structure)))
-        p.close()
+def molfile_plugin_dir():
+    vmddir = _vmddir()
+    if vmddir is not None:
+        return os.path.join(vmddir, _molfile_relative_plugin_dir())
+
+def _molfile_relative_plugin_dir():
+    "Molfile path relative VMD root"
+    return os.path.join('plugins',
+                        _molfile_machine_specific_plugin_dir_name(),
+                        'molfile')
+
+def _molfile_machine_specific_plugin_suffix():
+    return 'so'
+
+def _molfile_machine_specific_plugin_dir_name():
+    if _system == 'Linux':
+        if _64bit_python:
+            return 'LINUXAMD64'
+        else:
+            return 'LINUX'
+
+    elif not _64bit_python:
+        if _system == 'Darwin':
+            return 'MACOSXX86'
+
+        elif _system == 'Windows':
+            return 'WIN32'
+
+    bits = "64" if _64bit_python else "32"
+    raise RuntimeError("No known %s-bit plugin-path on %s system" % (bits, _system))
+
+
+def _vmddir():
+    vmddir = os.environ.get('VMDDIR')
+    if vmddir is not None:
+        return vmddir
+
+    for path in os.environ['PATH'].split(os.pathsep):
+        tentative_vmd_script_path = os.path.join(path, 'vmd')
+        if os.path.exists(tentative_vmd_script_path):
+            vmddir = _get_vmddir_from_vmd_script(tentative_vmd_script_path)
+            if vmddir:
+                return vmddir
+
+    for tentive_vmddir in ["C:\Program Files (x86)\University of Illinois\VMD"]:
+        if os.path.exists(tentive_vmddir):
+            return tentive_vmddir
+
+
+def _get_vmddir_from_vmd_script(self, vmd_script_path):
+    with open(vmd_script_path) as fh:
+        for L in islice(fh, 10):
+            match = re.match(r'^(?:set )?defaultvmddir=(?:"(/.*)"|(/[^# ]*)).*$', L)
+            if match:
+                a, b = match.groups()
+                return a or b
