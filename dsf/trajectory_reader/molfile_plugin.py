@@ -416,7 +416,7 @@ def _vmddir():
             return tentive_vmddir
 
 
-def _get_vmddir_from_vmd_script(self, vmd_script_path):
+def _get_vmddir_from_vmd_script(vmd_script_path):
     with open(vmd_script_path) as fh:
         for L in islice(fh, 10):
             match = re.match(r'^(?:set )?defaultvmddir=(?:"(/.*)"|(/[^# ]*)).*$', L)
