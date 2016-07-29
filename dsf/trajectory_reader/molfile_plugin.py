@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-import re
 
 # Copyright (C) 2011 Mattias Slabanja <slabanja@chalmers.se>
 #
@@ -23,12 +21,8 @@ import re
 Not much more than the necessary ctypes stuff.
 """
 
-__all__ = ['MolfilePlugin', 'TRAJECTORY_PLUGIN_MAPPING',
-           'molfile_timestep_t', 'molfile_timestep_metadata_t',
-           'molfile_atom_t', 'molfile_plugin_t']
-
-
 import os
+import re
 from sys import maxsize
 from platform import uname
 from itertools import islice
