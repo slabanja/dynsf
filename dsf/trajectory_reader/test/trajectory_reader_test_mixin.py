@@ -28,6 +28,10 @@ class TrajectoryReaderTestMixin(object):
         data_path = self._data_dir_path()
         return os.path.join(data_path, "positions.lammpstrj")
 
+    def filename_xtc_1frame_3atoms(self):
+        data_path = self._data_dir_path()
+        return os.path.join(data_path), "1frame3atoms.xtc"
+    
     def assert_arrays_equal_within_float32eps(self, a, b):
         abs_diff = numpy.absolute(a - b)
         eps = self._float32abs()

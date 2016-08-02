@@ -16,7 +16,7 @@
 import unittest
 from dsf.trajectory_reader.molfile_trajectory_reader import (
     molfile_trajectory_reader as trajectory_reader)
-from dsf.trajectory_reader.test.abstract_trajectory_reader_test import TrajectoryReaderTestMixin
+from dsf.trajectory_reader.test.trajectory_reader_test_mixin import TrajectoryReaderTestMixin
 
 _not_available = not trajectory_reader.reader_available()
 _not_available_reason = "Molfile plugin not available"
